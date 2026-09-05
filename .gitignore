@@ -1,0 +1,14 @@
+# Video de origen: no hace falta publicarlo, los frames ya estan generados
+*.mp4
+*.mov
+
+# Material del curso (documentos de apoyo, no forman parte del sitio)
+GUIA-*.md
+INSTRUCCIONES-IA.md
+LEEME-FRAMES.md
+Guia-*.docx
+
+# Sistema
+Thumbs.db
+desktop.ini
+.DS_Store
