@@ -342,8 +342,9 @@ nav.solida .nav-enlaces a{ color:var(--tenue); text-shadow:none; }
 }
 
 /* Indicador de scroll */
+/* A la izquierda: la esquina derecha la ocupa el boton del asistente */
 #desliza{
-  position:fixed; right:30px; bottom:28px; z-index:30;
+  position:fixed; left:30px; bottom:28px; z-index:30;
   display:flex; align-items:center; gap:11px;
   font-size:11px; letter-spacing:.22em; text-transform:uppercase;
   color:var(--tenue); font-weight:700;
@@ -721,6 +722,259 @@ footer{
 }
 
 /* ============================================================
+   ASISTENTE (chat conectado a n8n)
+   Widget propio, sin librerias ni CDN, con los colores del sitio.
+   ============================================================ */
+#chat-lanzador{
+  position:fixed; right:26px; bottom:26px; z-index:70;
+  display:flex; align-items:center; gap:12px;
+  flex-direction:row-reverse;
+}
+
+/* Boton redondo */
+#chat-boton{
+  position:relative;
+  width:60px; height:60px; flex:0 0 60px;
+  border:0; border-radius:50%; cursor:pointer;
+  background:linear-gradient(135deg,var(--acento),var(--acento-2));
+  box-shadow:0 10px 30px rgba(46,127,245,.5), 0 2px 8px rgba(0,0,0,.4);
+  display:grid; place-items:center;
+  transition:transform .28s cubic-bezier(.34,1.56,.64,1), box-shadow .28s ease;
+}
+#chat-boton:hover{ transform:scale(1.08); box-shadow:0 14px 40px rgba(46,127,245,.65); }
+#chat-boton:focus-visible{ outline:3px solid var(--acento-2); outline-offset:4px; }
+#chat-boton svg{ width:28px; height:28px; stroke:#04121f; transition:opacity .22s ease, transform .22s ease; }
+#chat-boton .icono-cerrar{ position:absolute; opacity:0; transform:rotate(-90deg) scale(.6); }
+#chat-lanzador.abierto #chat-boton .icono-chat{ opacity:0; transform:rotate(90deg) scale(.6); }
+#chat-lanzador.abierto #chat-boton .icono-cerrar{ opacity:1; transform:none; }
+
+/* Anillo de pulso: lo hace llamativo sin ser molesto */
+#chat-boton::before{
+  content:""; position:absolute; inset:-4px;
+  border-radius:50%; border:2px solid var(--acento-2);
+  opacity:0; animation:pulso-chat 2.8s ease-out infinite;
+  pointer-events:none;
+}
+@keyframes pulso-chat{
+  0%{ transform:scale(.92); opacity:.75; }
+  70%{ transform:scale(1.35); opacity:0; }
+  100%{ transform:scale(1.35); opacity:0; }
+}
+#chat-lanzador.abierto #chat-boton::before{ animation:none; }
+
+/* Punto verde de "en linea" */
+#chat-boton .enlinea{
+  position:absolute; top:2px; right:2px;
+  width:13px; height:13px; border-radius:50%;
+  background:#3ddc97; border:2.5px solid #0b1524;
+}
+#chat-lanzador.abierto #chat-boton .enlinea{ opacity:0; }
+
+/* Globo que invita a escribir: deja claro para que sirve el boton */
+#chat-globo{
+  max-width:210px;
+  background:var(--vidrio-2);
+  border:1px solid rgba(56,208,238,.32);
+  border-radius:14px 14px 4px 14px;
+  padding:11px 14px; padding-right:30px;
+  font-size:13.5px; line-height:1.45; color:var(--texto);
+  box-shadow:0 12px 34px rgba(0,0,0,.5);
+  backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px);
+  position:relative;
+  opacity:0; transform:translateX(14px) scale(.94);
+  transition:opacity .45s ease, transform .45s cubic-bezier(.34,1.3,.64,1);
+  pointer-events:none;
+}
+#chat-globo.visible{ opacity:1; transform:none; pointer-events:auto; }
+#chat-globo b{ color:var(--acento-2); font-weight:750; }
+#chat-globo .cerrar-globo{
+  position:absolute; top:5px; right:6px;
+  width:20px; height:20px; border:0; border-radius:50%;
+  background:transparent; color:var(--tenue); cursor:pointer;
+  font-size:16px; line-height:1; display:grid; place-items:center;
+}
+#chat-globo .cerrar-globo:hover{ background:rgba(238,241,246,.1); color:var(--texto); }
+#chat-lanzador.abierto #chat-globo{ opacity:0; transform:translateX(14px) scale(.94); pointer-events:none; }
+
+/* Panel de conversacion */
+#chat-panel{
+  position:fixed; right:26px; bottom:100px; z-index:69;
+  width:370px; max-width:calc(100vw - 32px);
+  height:520px; max-height:calc(100vh - 140px);
+  display:flex; flex-direction:column; overflow:hidden;
+  background:rgba(7,10,18,.93);
+  border:1px solid var(--linea);
+  border-radius:20px;
+  backdrop-filter:blur(26px) saturate(1.3); -webkit-backdrop-filter:blur(26px) saturate(1.3);
+  box-shadow:0 28px 80px rgba(0,0,0,.62);
+  opacity:0; transform:translateY(18px) scale(.97);
+  transition:opacity .3s ease, transform .3s cubic-bezier(.34,1.2,.64,1), visibility .3s;
+  visibility:hidden;
+}
+#chat-panel.abierto{ opacity:1; transform:none; visibility:visible; }
+
+#chat-cabecera{
+  display:flex; align-items:center; gap:12px;
+  padding:16px 18px;
+  border-bottom:1px solid var(--linea-2);
+  background:linear-gradient(135deg, rgba(46,127,245,.16), rgba(56,208,238,.07));
+  flex:0 0 auto;
+}
+#chat-cabecera .avatar{
+  width:40px; height:40px; flex:0 0 40px; border-radius:12px;
+  background:linear-gradient(135deg,var(--acento),var(--acento-2));
+  display:grid; place-items:center;
+  box-shadow:0 5px 16px rgba(46,127,245,.4);
+}
+#chat-cabecera .avatar svg{ width:21px; height:21px; stroke:#04121f; }
+#chat-cabecera .quien b{ display:block; font-size:15px; font-weight:750; letter-spacing:-.015em; }
+#chat-cabecera .quien span{
+  display:flex; align-items:center; gap:6px;
+  font-size:12px; color:var(--tenue); margin-top:2px;
+}
+#chat-cabecera .quien span::before{
+  content:""; width:7px; height:7px; border-radius:50%;
+  background:#3ddc97; box-shadow:0 0 8px #3ddc97;
+}
+#chat-cerrar{
+  margin-left:auto; width:32px; height:32px;
+  border:0; border-radius:9px; cursor:pointer;
+  background:rgba(238,241,246,.06); color:var(--tenue);
+  display:grid; place-items:center; transition:background .22s ease, color .22s ease;
+}
+#chat-cerrar:hover{ background:rgba(238,241,246,.14); color:var(--texto); }
+#chat-cerrar svg{ width:16px; height:16px; stroke:currentColor; }
+
+#chat-mensajes{
+  flex:1; overflow-y:auto; overscroll-behavior:contain;
+  padding:18px; display:flex; flex-direction:column; gap:12px;
+  scrollbar-width:thin; scrollbar-color:rgba(238,241,246,.2) transparent;
+}
+#chat-mensajes::-webkit-scrollbar{ width:7px; }
+#chat-mensajes::-webkit-scrollbar-thumb{ background:rgba(238,241,246,.16); border-radius:4px; }
+
+.burbuja{
+  max-width:84%; padding:11px 15px;
+  font-size:14.5px; line-height:1.55;
+  border-radius:16px;
+  animation:entra-burbuja .32s cubic-bezier(.22,.61,.36,1);
+  word-wrap:break-word; overflow-wrap:anywhere; white-space:pre-wrap;
+}
+@keyframes entra-burbuja{ from{ opacity:0; transform:translateY(8px); } to{ opacity:1; transform:none; } }
+.burbuja.bot{
+  align-self:flex-start;
+  background:rgba(238,241,246,.07);
+  border:1px solid var(--linea-2);
+  border-bottom-left-radius:5px;
+  color:#e3e9f2;
+}
+.burbuja.yo{
+  align-self:flex-end;
+  background:linear-gradient(135deg,var(--acento),var(--acento-2));
+  color:#04121f; font-weight:550;
+  border-bottom-right-radius:5px;
+}
+.burbuja.aviso{
+  align-self:center; text-align:center; max-width:100%;
+  background:rgba(255,80,80,.1);
+  border:1px solid rgba(255,80,80,.26);
+  color:#ffb3b3; font-size:13px;
+}
+
+/* Puntos de "escribiendo" */
+#chat-escribiendo{
+  align-self:flex-start; display:none;
+  padding:13px 17px;
+  background:rgba(238,241,246,.07);
+  border:1px solid var(--linea-2);
+  border-radius:16px; border-bottom-left-radius:5px;
+}
+#chat-escribiendo.visible{ display:flex; gap:5px; }
+#chat-escribiendo i{
+  width:7px; height:7px; border-radius:50%;
+  background:var(--acento-2); display:block;
+  animation:escribe 1.3s ease-in-out infinite;
+}
+#chat-escribiendo i:nth-child(2){ animation-delay:.18s; }
+#chat-escribiendo i:nth-child(3){ animation-delay:.36s; }
+@keyframes escribe{
+  0%,60%,100%{ transform:translateY(0); opacity:.4; }
+  30%{ transform:translateY(-6px); opacity:1; }
+}
+
+/* Sugerencias rapidas */
+#chat-sugerencias{
+  display:flex; flex-wrap:wrap; gap:7px;
+  padding:0 18px 14px;
+  flex:0 0 auto;
+}
+#chat-sugerencias button{
+  border:1px solid rgba(56,208,238,.3);
+  background:rgba(46,127,245,.1);
+  color:#a9dff0; cursor:pointer;
+  font-size:12.5px; font-weight:600;
+  padding:7px 13px; border-radius:999px;
+  transition:background .22s ease, border-color .22s ease, transform .2s ease;
+}
+#chat-sugerencias button:hover{
+  background:rgba(46,127,245,.24);
+  border-color:var(--acento-2);
+  transform:translateY(-1px);
+}
+
+#chat-pie{
+  flex:0 0 auto;
+  display:flex; align-items:flex-end; gap:9px;
+  padding:13px 14px;
+  border-top:1px solid var(--linea-2);
+  background:rgba(4,7,14,.55);
+}
+#chat-texto{
+  flex:1; resize:none;
+  min-height:42px; max-height:110px;
+  padding:11px 14px;
+  background:rgba(238,241,246,.06);
+  border:1px solid var(--linea);
+  border-radius:12px;
+  color:var(--texto); font-family:inherit; font-size:14.5px; line-height:1.45;
+  transition:border-color .22s ease, box-shadow .22s ease;
+}
+#chat-texto::placeholder{ color:var(--tenue-2); }
+#chat-texto:focus{
+  outline:none; border-color:var(--acento);
+  box-shadow:0 0 0 3px rgba(46,127,245,.16);
+}
+#chat-enviar{
+  width:42px; height:42px; flex:0 0 42px;
+  border:0; border-radius:12px; cursor:pointer;
+  background:linear-gradient(135deg,var(--acento),var(--acento-2));
+  display:grid; place-items:center;
+  transition:transform .22s ease, opacity .22s ease;
+}
+#chat-enviar:hover:not(:disabled){ transform:translateY(-2px); }
+#chat-enviar:disabled{ opacity:.45; cursor:not-allowed; transform:none; }
+#chat-enviar svg{ width:18px; height:18px; stroke:#04121f; }
+
+@media (max-width:720px){
+  #chat-lanzador{ right:16px; bottom:16px; }
+  #chat-boton{ width:54px; height:54px; flex:0 0 54px; }
+  #chat-boton svg{ width:25px; height:25px; }
+  #chat-globo{ max-width:168px; font-size:12.5px; }
+  #chat-panel{
+    right:10px; left:10px; bottom:84px;
+    width:auto; max-width:none;
+    height:min(70vh, 470px);
+  }
+}
+
+@media (prefers-reduced-motion:reduce){
+  #chat-boton::before{ animation:none; }
+  #chat-escribiendo i{ animation:none; }
+  .burbuja{ animation:none; }
+  #chat-panel, #chat-globo, #chat-boton{ transition-duration:.01ms; }
+}
+
+/* ============================================================
    RESPONSIVE
    ============================================================ */
 @media (max-width:980px){
@@ -740,7 +994,7 @@ footer{
   .hero-datos{ grid-template-columns:1fr; gap:22px; }
   .hero-datos div + div::before{ display:none; }
   .hero-datos div + div{ border-top:1px solid var(--linea-2); padding-top:20px; }
-  #desliza{ right:18px; bottom:18px; }
+  #desliza{ left:18px; bottom:18px; }
   #desliza span{ display:none; }
   .cab::before{ width:190%; height:200%; }
   .hero-in::before{ width:200%; height:135%; }
@@ -1343,6 +1597,62 @@ footer{
   </div>
 </footer>
 
+<!-- ============================================================
+     ASISTENTE VIRTUAL (chat conectado a n8n)
+     ============================================================ -->
+<div id="chat-panel" role="dialog" aria-modal="false" aria-labelledby="chat-titulo" aria-hidden="true">
+  <div id="chat-cabecera">
+    <div class="avatar">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 11.5a8.4 8.4 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.4 8.4 0 01-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.4 8.4 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/>
+      </svg>
+    </div>
+    <div class="quien">
+      <b id="chat-titulo">Asistente Pies Suaves</b>
+      <span>En línea</span>
+    </div>
+    <button id="chat-cerrar" type="button" aria-label="Cerrar el chat">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round">
+        <path d="M6 6l12 12M18 6L6 18"/>
+      </svg>
+    </button>
+  </div>
+
+  <div id="chat-mensajes" role="log" aria-live="polite" aria-atomic="false">
+    <div id="chat-escribiendo" aria-hidden="true"><i></i><i></i><i></i></div>
+  </div>
+
+  <div id="chat-sugerencias"></div>
+
+  <div id="chat-pie">
+    <textarea id="chat-texto" rows="1" placeholder="Escribe tu pregunta…"
+              aria-label="Escribe tu mensaje" maxlength="800"></textarea>
+    <button id="chat-enviar" type="button" aria-label="Enviar mensaje">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M4.5 12h14M13 6.5l5.5 5.5L13 17.5"/>
+      </svg>
+    </button>
+  </div>
+</div>
+
+<div id="chat-lanzador">
+  <button id="chat-boton" type="button" aria-label="Abrir el chat de ayuda" aria-expanded="false" aria-controls="chat-panel">
+    <span class="enlinea" aria-hidden="true"></span>
+    <svg class="icono-chat" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M21 11.5a8.4 8.4 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.4 8.4 0 01-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.4 8.4 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/>
+      <path d="M8.6 11.4h.01M12 11.4h.01M15.4 11.4h.01"/>
+    </svg>
+    <svg class="icono-cerrar" viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round" aria-hidden="true">
+      <path d="M6 6l12 12M18 6L6 18"/>
+    </svg>
+  </button>
+
+  <div id="chat-globo" role="status">
+    <button class="cerrar-globo" type="button" aria-label="Ocultar este aviso">&times;</button>
+    <b>¿Dudas sobre tus pies?</b><br>Pregúntale a nuestro asistente.
+  </div>
+</div>
+
 <script>
 /* ================================================================
    CONFIGURACION DEL VIDEO POR SCROLL
@@ -1696,6 +2006,209 @@ btn.addEventListener('click', async function () {
     btn.disabled = false; btn.textContent = 'Enviar mis datos';
   }
 });
+
+/* ================================================================
+   ASISTENTE VIRTUAL — conectado al Chat Trigger de n8n
+
+   Protocolo del nodo "Chat Trigger" en modo embebido:
+     POST { action: "sendMessage", sessionId, chatInput }
+     respuesta -> { output: "..." }
+
+   Sin librerias ni CDN: el curso prohibe recursos externos.
+   ================================================================ */
+const CHAT_URL = "https://n8n-production-ef83.up.railway.app/webhook/5c9e2d7a-4b81-4a36-9f0d-2e7b1c8a6d08/chat";
+
+const CHAT_BIENVENIDA = "¡Hola! Soy el asistente de Clínica Podológica Pies Suaves. Puedo resolver tus dudas sobre nuestros servicios, precios y horarios. ¿En qué te ayudo?";
+
+const CHAT_SUGERENCIAS = [
+  "¿Qué servicios ofrecen?",
+  "¿Atienden pie diabético?",
+  "¿Cuánto cuesta la consulta?",
+  "¿Dónde están?"
+];
+
+(function () {
+  'use strict';
+
+  const lanzador   = document.getElementById('chat-lanzador');
+  const boton      = document.getElementById('chat-boton');
+  const panel      = document.getElementById('chat-panel');
+  const cerrar     = document.getElementById('chat-cerrar');
+  const globo      = document.getElementById('chat-globo');
+  const cerrarGlobo= globo.querySelector('.cerrar-globo');
+  const mensajes   = document.getElementById('chat-mensajes');
+  const escribiendo= document.getElementById('chat-escribiendo');
+  const sugeridos  = document.getElementById('chat-sugerencias');
+  const texto      = document.getElementById('chat-texto');
+  const enviar     = document.getElementById('chat-enviar');
+
+  let abierto = false;
+  let ocupado = false;
+  let arrancado = false;
+
+  /* --- sessionId estable para que el bot pueda recordar el hilo --- */
+  function idSesion() {
+    let id = null;
+    try { id = localStorage.getItem('piessuaves_chat_sid'); } catch (e) {}
+    if (!id) {
+      id = 'web-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10);
+      try { localStorage.setItem('piessuaves_chat_sid', id); } catch (e) {}
+    }
+    return id;
+  }
+  const SESION = idSesion();
+
+  function alFinal() { mensajes.scrollTop = mensajes.scrollHeight; }
+
+  function burbuja(txt, clase) {
+    const d = document.createElement('div');
+    d.className = 'burbuja ' + clase;
+    d.textContent = txt;
+    mensajes.insertBefore(d, escribiendo);
+    alFinal();
+    return d;
+  }
+
+  function pintarSugerencias() {
+    sugeridos.innerHTML = '';
+    CHAT_SUGERENCIAS.forEach(function (s) {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.textContent = s;
+      b.addEventListener('click', function () { mandar(s); });
+      sugeridos.appendChild(b);
+    });
+  }
+
+  function ocultarSugerencias() { sugeridos.style.display = 'none'; }
+
+  /* --- Extrae el texto de la respuesta sea cual sea la clave usada --- */
+  function leerRespuesta(datos) {
+    if (typeof datos === 'string') return datos;
+    if (!datos || typeof datos !== 'object') return '';
+    const claves = ['output', 'text', 'message', 'response', 'answer', 'reply', 'chatResponse'];
+    for (let i = 0; i < claves.length; i++) {
+      const v = datos[claves[i]];
+      if (typeof v === 'string' && v.trim()) return v;
+    }
+    if (Array.isArray(datos) && datos.length) return leerRespuesta(datos[0]);
+    if (datos.data) return leerRespuesta(datos.data);
+    if (datos.json) return leerRespuesta(datos.json);
+    return '';
+  }
+
+  async function mandar(mensaje) {
+    const txt = (mensaje !== undefined ? mensaje : texto.value).trim();
+    if (!txt || ocupado) return;
+
+    ocultarSugerencias();
+    burbuja(txt, 'yo');
+    texto.value = '';
+    texto.style.height = 'auto';
+
+    ocupado = true;
+    enviar.disabled = true;
+    escribiendo.classList.add('visible');
+    alFinal();
+
+    try {
+      const r = await fetch(CHAT_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'sendMessage',
+          sessionId: SESION,
+          chatInput: txt
+        })
+      });
+
+      let datos = null;
+      const crudo = await r.text();
+      try { datos = JSON.parse(crudo); } catch (e) { datos = crudo; }
+
+      escribiendo.classList.remove('visible');
+
+      if (!r.ok) {
+        burbuja('El asistente no está disponible en este momento. Puedes dejarnos tus datos en el formulario y te contactamos.', 'aviso');
+      } else {
+        const respuesta = leerRespuesta(datos);
+        burbuja(respuesta || 'No he podido generar una respuesta. ¿Puedes reformular la pregunta?', 'bot');
+      }
+    } catch (e) {
+      escribiendo.classList.remove('visible');
+      burbuja('No hay conexión con el asistente. Inténtalo de nuevo en un momento.', 'aviso');
+    } finally {
+      ocupado = false;
+      enviar.disabled = false;
+      alFinal();
+      if (abierto) texto.focus();
+    }
+  }
+
+  function abrir() {
+    abierto = true;
+    lanzador.classList.add('abierto');
+    panel.classList.add('abierto');
+    panel.setAttribute('aria-hidden', 'false');
+    boton.setAttribute('aria-expanded', 'true');
+    boton.setAttribute('aria-label', 'Cerrar el chat de ayuda');
+    globo.classList.remove('visible');
+
+    if (!arrancado) {
+      arrancado = true;
+      burbuja(CHAT_BIENVENIDA, 'bot');
+      pintarSugerencias();
+    }
+    setTimeout(function () { texto.focus(); }, 260);
+    alFinal();
+  }
+
+  function cerrarChat() {
+    abierto = false;
+    lanzador.classList.remove('abierto');
+    panel.classList.remove('abierto');
+    panel.setAttribute('aria-hidden', 'true');
+    boton.setAttribute('aria-expanded', 'false');
+    boton.setAttribute('aria-label', 'Abrir el chat de ayuda');
+    boton.focus();
+  }
+
+  boton.addEventListener('click', function () { abierto ? cerrarChat() : abrir(); });
+  cerrar.addEventListener('click', cerrarChat);
+  enviar.addEventListener('click', function () { mandar(); });
+
+  cerrarGlobo.addEventListener('click', function (e) {
+    e.stopPropagation();
+    globo.classList.remove('visible');
+    try { sessionStorage.setItem('piessuaves_globo', 'visto'); } catch (err) {}
+  });
+
+  globo.addEventListener('click', abrir);
+
+  /* Enter envia, Mayus+Enter hace salto de linea */
+  texto.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); mandar(); }
+  });
+
+  /* El area de texto crece con el contenido */
+  texto.addEventListener('input', function () {
+    texto.style.height = 'auto';
+    texto.style.height = Math.min(texto.scrollHeight, 110) + 'px';
+  });
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && abierto) cerrarChat();
+  });
+
+  /* El globo aparece a los 4 s, solo una vez por visita */
+  let globoVisto = false;
+  try { globoVisto = sessionStorage.getItem('piessuaves_globo') === 'visto'; } catch (e) {}
+  if (!globoVisto) {
+    setTimeout(function () {
+      if (!abierto) globo.classList.add('visible');
+    }, 4000);
+  }
+})();
 </script>
 
 </body>
